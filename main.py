@@ -70,7 +70,7 @@ class App(ctk.CTk):
     # ==================================================================
     def mostrar_tela_login(self):
         """Cria e exibe os widgets da tela de login."""
-        self.title("Chatbot - Tela de Login")
+        self.title("Giga-Byte - Tela de Login")
         self.geometry("400x450")
         self.resizable(False, False)
         
@@ -182,7 +182,7 @@ class App(ctk.CTk):
             widget.destroy()
 
         # Reconfigura a janela para o chat
-        self.title(f"Chatbot Gemini - Logado como {self.nome_usuario}")
+        self.title(f"Giga-Byte Gemini - Logado como {self.nome_usuario}")
         self.geometry("700x550")
         self.resizable(True, True)
 
@@ -194,7 +194,7 @@ class App(ctk.CTk):
         self.top_frame.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="ew")
         self.top_frame.grid_columnconfigure(0, weight=1) # Coluna do título expande
 
-        self.chat_title = ctk.CTkLabel(self.top_frame, text="IA Própria - Chat", font=("Calibri", 18, "bold"))
+        self.chat_title = ctk.CTkLabel(self.top_frame, text="Giga-Byte - Chat", font=("Calibri", 18, "bold"))
         self.chat_title.grid(row=0, column=0, padx=(10, 0), sticky="w")
 
         self.botao_limpar = ctk.CTkButton(self.top_frame, text="Limpar", width=80, command=self.limpar_chat)
@@ -247,12 +247,28 @@ class App(ctk.CTk):
         self.after(500, self.obter_resposta_gemini, mensagem_usuario)
 
     def obter_resposta_gemini(self, mensagem):
+        # prompt detalhado com as instruções para a IA.
+        prompt_completo = f"""
+        **Instruções de Sistema:**
+        1.  **Sua Persona:** Você é o "Giga-Byte", um especialista de TI gente boa e com um ótimo senso de humor. Use uma linguagem informal, gírias de tecnologia (como "debugar", "ram", "pingar") e faça piadas ou analogias engraçadas quando apropriado. Trate o usuário como um colega que está pedindo ajuda.
+        
+        2.  **Escopo de Conhecimento:** Sua especialidade é Tecnologia da Informação. Responda APENAS sobre tópicos como programação, redes, hardware, software, sistemas operacionais, cibersegurança e cultura geek de TI.
+        
+        3.  **Regra de Recusa:** Se o usuário perguntar sobre qualquer outro assunto que não seja de TI (por exemplo: culinária, esportes, história, política, etc.), você DEVE recusar a resposta de forma educada e divertida. Diga algo como: "Opa! Essa pergunta está fora da minha BIOS. Meu processador só entende de bits e bytes. Manda uma dúvida de TI que eu resolvo num piscar de LED!"
+
+        **Pergunta do Usuário:**
+        "{mensagem}"
+        """
+
         try:
             model = genai.GenerativeModel('gemini-2.5-flash')
-            response = model.generate_content(mensagem)
-            self._adicionar_mensagem("Gemini", response.text)
+            # Enviamos o prompt completo, não apenas a mensagem do usuário
+            response = model.generate_content(prompt_completo)
+            
+            # Mudamos o nome do autor para a persona que criamos!
+            self._adicionar_mensagem("Giga-Byte", response.text)
         except Exception as e:
-            self._adicionar_mensagem("Erro", f"Ocorreu um erro: {e}")
+            self._adicionar_mensagem("Erro", f"Ocorreu um erro na API: {e}")
 
     def _adicionar_mensagem(self, autor, texto):
         if autor == self.nome_usuario:
