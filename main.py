@@ -1,5 +1,8 @@
 import customtkinter as ctk
 
+from PIL import Image
+from customtkinter import CTkImage
+
 import google.generativeai as genai
 
 import json
@@ -42,6 +45,22 @@ class App(ctk.CTk):
         
         # Atributo para guardar o nome do usuário logado
         self.nome_usuario = ""
+
+        # --- CARREGAMENTO DOS ÍCONES ---
+        try:
+            # Carrega a imagem do usuário e a redimensiona
+            user_image = Image.open("user_icon.png")
+            self.user_icon = CTkImage(user_image, size=(40, 40))
+
+            # Carrega a imagem do bot e a redimensiona
+            bot_image = Image.open("bot_icon.png")
+            self.bot_icon = CTkImage(bot_image, size=(40, 40))
+        except FileNotFoundError:
+            print("Erro: Arquivos 'user_icon.png' ou 'bot_icon.png' não encontrados.")
+            print("Coloque os arquivos de ícone na mesma pasta do script.")
+            # Cria imagens vazias como placeholder para evitar que o app quebre
+            self.user_icon = CTkImage(Image.new("RGB", (40, 40), "gray"))
+            self.bot_icon = CTkImage(Image.new("RGB", (40, 40), "darkgray"))
 
         # A aplicação começa mostrando a tela de login
         self.mostrar_tela_login()
@@ -229,43 +248,66 @@ class App(ctk.CTk):
 
     def obter_resposta_gemini(self, mensagem):
         try:
-            model = genai.GenerativeModel('gemini-2.5-pro') # Usando um modelo padrão
+            model = genai.GenerativeModel('gemini-2.5-flash')
             response = model.generate_content(mensagem)
             self._adicionar_mensagem("Gemini", response.text)
         except Exception as e:
             self._adicionar_mensagem("Erro", f"Ocorreu um erro: {e}")
 
     def _adicionar_mensagem(self, autor, texto):
-        # AQUI USAMOS O NOME DO USUÁRIO PARA DEFINIR O BALÃO
         if autor == self.nome_usuario:
-            cor_balao = "#2b59c3"
-            alinhamento = "e"
+            # --- Configurações para a mensagem do USUÁRIO ---
+            icone = self.user_icon
+            alinhamento_geral = "e" # Alinha o frame principal à direita
+            alinhamento_balao = "e" # Alinha o conteúdo dentro do frame à direita
             justificativa_texto = "right"
+            cor_balao = "#2b59c3"
+            coluna_icone = 1 # Ícone na segunda coluna
+            coluna_balao = 0 # Balão na primeira coluna
         else:
-            cor_balao = "#333333"
-            alinhamento = "w"
+            # --- Configurações para a mensagem do BOT/ERRO ---
+            icone = self.bot_icon
+            alinhamento_geral = "w" # Alinha o frame principal à esquerda
+            alinhamento_balao = "w" # Alinha o conteúdo dentro do frame à esquerda
             justificativa_texto = "left"
+            cor_balao = "#333333"
+            coluna_icone = 0 # Ícone na primeira coluna
+            coluna_balao = 1 # Balão na segunda coluna
 
+        # Frame que ocupa a largura toda e alinha o conteúdo (esquerda/direita)
         frame_alinhador = ctk.CTkFrame(self.tela_chat, fg_color="transparent")
-        frame_alinhador.pack(fill="x", padx=10, pady=4, anchor=alinhamento)
+        frame_alinhador.pack(fill="x", padx=10, pady=5, anchor=alinhamento_geral)
+        
+        # Label do nome do autor (acima do balão)
+        ctk.CTkLabel(frame_alinhador, text=autor, font=("Calibri", 12, "italic")).pack(anchor=alinhamento_balao, padx=10)
 
-        # Adiciona o nome do autor acima do balão
-        ctk.CTkLabel(frame_alinhador, text=autor, font=("Calibri", 12, "italic")).pack(anchor=alinhamento, padx=10)
+         # Frame para conter o ícone e o balão lado a lado
+        message_frame = ctk.CTkFrame(frame_alinhador, fg_color="transparent")
+        message_frame.pack(anchor=alinhamento_balao, padx=5, pady=(0, 5))
+        
+        # Configura as colunas para o ícone e o balão
+        message_frame.grid_columnconfigure(coluna_balao, weight=1) # Faz a coluna do balão expandir
 
+        # Widget do Ícone
+        icon_label = ctk.CTkLabel(message_frame, text="", image=icone)
+        icon_label.grid(row=0, column=coluna_icone, padx=5, sticky="s") # sticky="s" alinha na base
+
+        # Widget do Balão de Mensagem
         balao = ctk.CTkLabel(
-            frame_alinhador,
+            message_frame,
             text=texto,
             fg_color=cor_balao,
             corner_radius=15,
             font=("Calibri", 14),
-            wraplength=self.winfo_width() - 150,
+            wraplength=self.winfo_width() - 200, # Diminuímos para dar espaço ao ícone
             justify=justificativa_texto,
-            padx=10,
-            pady=10,
+            padx=12,
+            pady=12,
             text_color="#EAEAEA"
         )
-        balao.pack(anchor=alinhamento, padx=5)
+        balao.grid(row=0, column=coluna_balao, sticky="nsew")
 
+        # Rola a tela para a última mensagem
         self.update_idletasks()
         self.tela_chat._parent_canvas.yview_moveto(1.0)
 
